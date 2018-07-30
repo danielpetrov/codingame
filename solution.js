@@ -1,6 +1,8 @@
-import { DECK_SIZE, HEALTH, CARDS_IN_HAND, MANA } from 'constants'
-import { createNewPlayer } from "./createPlayer";
+// import { DECK_SIZE, HEALTH, CARDS_IN_HAND, MANA } from 'constants'
 
+import { createNewPlayer } from "./createPlayer";
+import { HEALTH, MANA, DECK_SIZE, CARDS_IN_HAND } from './constants'
+printErr(createNewPlayer, 'create new player', HEALTH, MANA, DECK_SIZE)
 const player = createNewPlayer()
 const opponent = createNewPlayer()
 
@@ -17,7 +19,7 @@ while (true) {
   opponent.set(DECK_SIZE, parseInt(opponentInputs[2]))
 
   let opponentHand = parseInt(readline());
-  let cardCount = 5 //parseInt(readline());
+  let cardCount = parseInt(readline());
   for (let i = 0; i < cardCount; i++) {
     let inputs = readline().split(' ');
     let cardNumber = parseInt(inputs[0]);
