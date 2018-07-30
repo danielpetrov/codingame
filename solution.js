@@ -36,7 +36,7 @@ while (true) {
     const cardDraw = parseInt(inputs[10])
 
     if (player.get(MANA) === 0) { // DRAW PHASE
-
+      pick({ player, cardNumber, instanceId, location, cardType, cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw })
     }
   }
 

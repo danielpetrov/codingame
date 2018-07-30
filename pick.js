@@ -12,6 +12,6 @@ const shouldBalanceDeck = ({ deck }) => {
 
 }
 
-const pick = () => {
+const pick = ({ player, cardNumber, instanceId, location, cardType, cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw }) => {
 
 }
