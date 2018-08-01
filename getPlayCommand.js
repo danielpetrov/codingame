@@ -17,5 +17,5 @@ export const getPlayCommand = ({ myCardsOnBoard, opponentCardsOnBoard }) => {
     }
   })
 
-  return output
+  return output.trim()
 }

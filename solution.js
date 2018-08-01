@@ -57,11 +57,11 @@ while (true) {
     output += getSummonCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
     output += getPlayCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
 
-    if (output !== '') {
-      print(output.trim())
-    } else {
-      print('PASS')
+    if (output === '') {
+      output = 'PASS'
     }
+    
+    print(output)
 
     /*
     SUMMON id to summon the creature of instanceId id from the player's hand.
