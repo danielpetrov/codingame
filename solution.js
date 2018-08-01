@@ -2,7 +2,8 @@ import mutatis from 'mutatis'
 import { playerInitialDetails } from "./initialState"
 import { HEALTH, MANA, DECK_SIZE, CARDS_IN_HAND_COUNT } from './constants'
 import { pick } from './pick'
-import { getSummonCommand } from "./playCard"
+import { getSummonCommand } from "./getSummonCommand"
+import { getPlayCommand } from "./getPlayCommand";
 
 let player = mutatis(playerInitialDetails)
 let opponent = mutatis(playerInitialDetails)
@@ -39,20 +40,28 @@ while (true) {
     const opponentHealthChange = parseInt(inputs[9])
     const cardDraw = parseInt(inputs[10])
 
-    cards.push({ player, cardNumber, instanceId, location, cardType, cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw })
+    cards.push({ cardNumber, instanceId, location, cardType, cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw })
   }
 
   if (player.get(MANA) === 0) { // DRAW PHASE
     print(`PICK ${pick({ cards })}`)
-  } else {
+  } else { // PLAY PHASE
     const myCardsInHand = cards.filter(card => card.location === 0)
     const myCardsOnBoard = cards.filter(card => card.location === 1)
     const opponentCardsOnBoard = cards.filter(card => card.location === -1)
 
-    player.set(CARDS_IN_HAND_COUNT, myCards.size)
+    player.set(CARDS_IN_HAND_COUNT, myCardsInHand.size)
 
-    const summonCommand = getSummonCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
+    let output = ''
 
+    output += getSummonCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
+    output += getPlayCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
+
+    if (output !== '') {
+      print(output.trim())
+    } else {
+      print('PASS')
+    }
 
     /*
     SUMMON id to summon the creature of instanceId id from the player's hand.
@@ -64,6 +73,6 @@ Players may append text to each of their actions, it will be displayed in the vi
 
 Example: SUMMON 3;ATTACK 4 5 yolo; ATTACK 8 -1 no fear.
      */
-    print('PASS')
+
   }
 }
