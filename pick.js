@@ -1,3 +1,13 @@
+import {
+  LETHAL,
+  GUARD,
+  BREAKTRHOUGH,
+  CHARGE,
+  WARD,
+  DRAIN
+} from './constants'
+import { checkHasAbility } from './utils'
+
 const costToBalanceMeter = {
   0: '1',
   1: '1',
@@ -6,12 +16,12 @@ const costToBalanceMeter = {
   4: '4',
   5: '5',
   6: '6+',
-  7: '7+',
-  8: '8+',
-  9: '8+',
-  10: '8+',
-  11: '8+',
-  12: '8+'
+  7: '6+',
+  8: '6+',
+  9: '6+',
+  10: '6+',
+  11: '6+',
+  12: '6+'
 }
 
 const balanceMeter = {
@@ -23,21 +33,16 @@ const balanceMeter = {
   '6+': 0
 }
 
-const deck = [
+const deck = []
 
-]
 const VALUES_OF_ABILITIES = {
-  'L': 5.5,
-  'W': 4,
-  'G': 2,
-  'B': 1,
-  'D': 1,
-  'C': 1,
+  [LETHAL]: 5.5,
+  [WARD]: 4,
+  [GUARD]: 2,
+  [BREAKTRHOUGH]: 1,
+  [DRAIN]: 1,
+  [CHARGE]: 1,
   '-': 0
-}
-
-const shouldBalanceDeck = ({ deck }) => {
-
 }
 
 const getAbilitiesValue = abilities => {
@@ -48,32 +53,46 @@ const getAbilitiesValue = abilities => {
   }, 0)
 }
 
+const HEALTH_CHANGE_COEF = 1/10
+const CARD_DRAW_COEF = 2
 
-const getCardValue = ({ cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw, cardType }) => {
+const getCardValue = card => {
+  const { cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw, cardType } = card
   let value = 0
 
   if (cardType === 0) { // if creature
-    if (cost < 5) { // TODO: improve formula
-      value = (attack + (defense * 1.25))
+    if (checkHasAbility({ card, ability: LETHAL })) {
+      value = defense * 2
     } else {
-      value = (attack + defense)
+      value = attack + defense
     }
+    printErr('initial value', value)
 
-    printErr('value', value)
     value = value + getAbilitiesValue(abilities)
+    if (cardDraw) {
+      value = value + (parseInt(cardDraw) * CARD_DRAW_COEF)
+    }
+    if (opponentHealthChange) {
+      value = value + (parseInt(opponentHealthChange) * HEALTH_CHANGE_COEF)
+    }
+    if (myHealthChange) {
+      value = value + (parseInt(myHealthChange) * HEALTH_CHANGE_COEF)
+    }
+    printErr('value with abilities', value)
   } else {
-    value = 1 //TODO: implement
+    value = -1 //TODO: implement
   }
 
   value = value - ((cost || 1) * 2)
 
-  printErr('value with cost', value, cost)
+  printErr('value minus cost', value)
 
   if (balanceMeter[costToBalanceMeter[cost]] >= 5) {
-    value -= balanceMeter[costToBalanceMeter[cost]] / 2
-    printErr('value with balance', value, cost)
+    value = value - (balanceMeter[costToBalanceMeter[cost]] / 2)
+    printErr('value minus balance', value)
   }
 
+  printErr('final value', value)
   return value
 }
 
