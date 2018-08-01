@@ -24,7 +24,7 @@ while (true) {
   opponent = opponent.set(CARDS_IN_HAND_COUNT, opponentCardsCount)
 
   const visibleCardsCount = parseInt(readline())
-  const cards = []
+  let cards = []
 
   for (let i = 0; i < visibleCardsCount; i++) {
     const inputs = readline().split(' ')
@@ -40,7 +40,7 @@ while (true) {
     const opponentHealthChange = parseInt(inputs[9])
     const cardDraw = parseInt(inputs[10])
 
-    cards.push({ cardNumber, instanceId, location, cardType, cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw })
+    cards = cards.concat({ cardNumber, instanceId, location, cardType, cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw })
   }
 
   if (player.get(MANA) === 0) { // DRAW PHASE
@@ -60,19 +60,7 @@ while (true) {
     if (output === '') {
       output = 'PASS'
     }
-    
+
     print(output)
-
-    /*
-    SUMMON id to summon the creature of instanceId id from the player's hand.
-ATTACK idAttacker idTarget to attack an opposing creature or opposing player of instanceId idTarget with a creature on the board of instanceId idAttacker.
-idTarget can be the "no-creature" identifier -1. It is used to attack the opponent directly.
-PASS to do nothing.
-Players may use several actions by using a semi-colon ;.
-Players may append text to each of their actions, it will be displayed in the viewer.
-
-Example: SUMMON 3;ATTACK 4 5 yolo; ATTACK 8 -1 no fear.
-     */
-
   }
 }
