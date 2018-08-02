@@ -56,43 +56,48 @@ const getAbilitiesValue = abilities => {
 const HEALTH_CHANGE_COEF = 1/10
 const CARD_DRAW_COEF = 2
 
+export const getCardInitialValue = card => {
+  const { attack, defense, abilities } = card
+  let value = 0
+
+  if (checkHasAbility({ card, ability: LETHAL })) {
+    value = defense * 2
+  } else {
+    value = attack + defense
+  }
+
+  value = value + getAbilitiesValue(abilities)
+
+  return value
+}
+
 const getCardValue = card => {
-  const { cost, attack, defense, abilities, myHealthChange, opponentHealthChange, cardDraw, cardType } = card
+  const { cost, myHealthChange, opponentHealthChange, cardDraw, cardType } = card
   let value = 0
 
   if (cardType === 0) { // if creature
-    if (checkHasAbility({ card, ability: LETHAL })) {
-      value = defense * 2
-    } else {
-      value = attack + defense
-    }
-    printErr('initial value', value)
+    value = getCardInitialValue(card)
 
-    value = value + getAbilitiesValue(abilities)
     if (cardDraw) {
       value = value + (parseInt(cardDraw) * CARD_DRAW_COEF)
     }
+
     if (opponentHealthChange) {
       value = value + (parseInt(opponentHealthChange) * HEALTH_CHANGE_COEF)
     }
     if (myHealthChange) {
       value = value + (parseInt(myHealthChange) * HEALTH_CHANGE_COEF)
     }
-    printErr('value with abilities', value)
   } else {
     value = -1 //TODO: implement
   }
 
   value = value - ((cost || 1) * 2)
 
-  printErr('value minus cost', value)
-
   if (balanceMeter[costToBalanceMeter[cost]] >= 5) {
     value = value - (balanceMeter[costToBalanceMeter[cost]] / 2)
-    printErr('value minus balance', value)
   }
 
-  printErr('final value', value)
   return value
 }
 
