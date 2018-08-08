@@ -133,7 +133,8 @@ const getAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack }) =
         monstersOnBoardValue: getMonstersOnBoardValue({
           myCardsOnBoard: myCardsAfterBattle.filter(card => card.defense > 0),
           opponentCardsOnBoard: opponentCardsAfterBattle.filter(card => card.defense > 0)
-        })
+        }),
+        myCreaturesThatDidntAttack
       })
     })
 
@@ -159,12 +160,14 @@ export const getPlayCommand = ({ myCardsOnBoard, myCardsSummonedThisTurn, oppone
 
   // attack guards
   if (myCardsThatCanAttack.length > 0) {
+    let command = ''
+
     if (opponentGuards.length > 0) {
       const attackingResults = getAllAttackResults({
         myCardsThatCanAttack,
         opponentDefendingCards: opponentGuards
       })
-printErr('opponent min results', attackingResults.map(res => res.monstersOnBoardValue.opponentValue))
+
       const opponentMinResult = Math.min(...attackingResults.map(res => res.monstersOnBoardValue.opponentValue))
       const oppMinAttackingResults = attackingResults.filter(res => res.monstersOnBoardValue.opponentValue === opponentMinResult)
       const maxResult = Math.max(...oppMinAttackingResults.map(res => res.monstersOnBoardValue.myValue))
@@ -174,25 +177,15 @@ printErr('opponent min results', attackingResults.map(res => res.monstersOnBoard
       })
 
       bestAttack.attacks.forEach(attack => {
-        printErr('attackingId', attack.attackingCardInstanceId)
-        printErr('def id', attack.defendingCardInstanceId)
-        // command += `ATTACK ${attackingCard.instanceId} -1 Don't worry! Be happy!; `
+        command += `ATTACK ${attack.attackingCardInstanceId} ${attack.defendingCardInstanceId}; `
       })
-    }
 
-    const command = myCardsThatCanAttack.reduce((command, attackingCard) => {
-      if (opponentGuards.length > 0) {
-        command += `ATTACK ${attackingCard.instanceId} ${opponentGuards[0].instanceId}; `
-
-        if (checkIsTerminated({ attackingCard, defendingCard: opponentGuards[0] })) {
-          opponentGuards = opponentGuards.slice(1)
-        }
-      } else {
-        command += `ATTACK ${attackingCard.instanceId} -1 Don't worry! Be happy!; `
+      if (bestAttack.myCreaturesThatDidntAttack.length > 0) {
+        bestAttack.myCreaturesThatDidntAttack.forEach(creature => {
+          command += `ATTACK ${creature.instanceId} -1 Don't worry! Be happy!; `
+        })
       }
-
-      return command
-    }, '')
+    }
 
     return command.trim()
   }
