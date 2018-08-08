@@ -182,9 +182,13 @@ export const getPlayCommand = ({ myCardsOnBoard, myCardsSummonedThisTurn, oppone
 
       if (bestAttack.myCreaturesThatDidntAttack.length > 0) {
         bestAttack.myCreaturesThatDidntAttack.forEach(creature => {
-          command += `ATTACK ${creature.instanceId} -1 Don't worry! Be happy!; `
+          command += `ATTACK ${creature} -1 Don't worry! Be happy!; `
         })
       }
+    } else {
+      myCardsThatCanAttack.forEach(card => {
+        command += `ATTACK ${card.instanceId} -1 Don't worry! Be happy!; `
+      })
     }
 
     return command.trim()
