@@ -42,6 +42,26 @@ const takeDamage = ({ attackingCard, defendingCard }) => {
   return defendingCard.defense // no damage
 }
 
+function getCombinations(numberOfAttackingCards, numberOfDefendingCards) {
+  let result = [Array.apply(null, {length: numberOfAttackingCards}).map(function(){return "0"}).join("")];
+
+  for (let incrementingDigit = 0; incrementingDigit < numberOfAttackingCards; ++incrementingDigit) {
+    var generation = [];
+
+    for (let x of result) {
+      for (let digitValue = 1; digitValue < numberOfDefendingCards; ++digitValue) {
+        let y = x.slice(0, incrementingDigit) + digitValue + x.slice(incrementingDigit + 1);
+
+        generation.push(y);
+      }
+    }
+
+    result.push.apply(result, generation);
+  }
+
+  return result;
+}
+
 const getAttackResults = ({ attackingCard, defendingCard }) => ({
   defendingCardRemainingHealth: takeDamage({ attackingCard, defendingCard }),
   attackingCardRemainingHealth: takeDamage({ attackingCard: defendingCard, defendingCard: attackingCard }),
@@ -49,78 +69,17 @@ const getAttackResults = ({ attackingCard, defendingCard }) => ({
   wardsLost: 0 // TODO: implement
 })
 
-const gerAllAttackResults = ({ possibleOpponentAttacks, myCardsThatCanAttack, attackingCardIndex, defendingCardIndex }) => {
-  const allCombinations = []
+const gerAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack }) => {
+  const allDefendingCardCombinations = getCombinations(opponentDefendingCards.length)
 
+  const allCombinations = allDefendingCardCombinations.reduce((acc, combination) => {
+    combination = combination.toString()
 
-  for (let i = 0; i < myCards.length; i++) {
-    const attackingCard = myCards[i]
-
-    for (let j = 0; j < myCards.length; j++) {
-      const defendingCard = opponentCards[j]
-
-      const { defendingCardRemainingHealth, attackingCardRemainingHealth } = getAttackResults({
-        attackingCard,
-        defendingCard
-      })
-
-      if (defendingCardRemainingHealth === 0) {
-        opponentCards[j].isTerminated = true
-      }
-
-
+    for (let i = 0; i < combination.length; i++) {
+      acc = acc.concat(getAttackResults({ attackingCard: myCardsThatCanAttack[i], defendingCard: opponentDefendingCards[combination[i]] }))
     }
-  }
-
-  allCombinations.push({
-    terminal: true,
-    possibleOpponentAttacks,
-    myCardsThatCanAttack
-  })
+  }, [])
 }
-}
-
-const getAllAttackResults = ({ possibleOpponentAttacks, myCardsThatCanAttack, }) => {
-  const allCombos = []
-
-  myCardsThatCanAttack.forEach(attackingCard => {
-    possibleOpponentAttacks.forEach(defendingCard => {
-      allCombos.push({ attackingCard, defendingCard })
-    })
-  })
-
-}
-/*const attackCreature = ({ possibleOpponentAttacks, myCardsThatCanAttack }) => {
-  const possibleAttackResults = []
-
-  myCardsThatCanAttack.forEach(attackingCard => {
-    possibleOpponentAttacks.forEach(defendingCard => {
-      possibleAttackResults.push({
-        ...getAttackResults({ attackingCard, defendingCard }),
-        attackingCardInstanceId: attackingCard.instanceId,
-        defendingCardInstanceId: defendingCard.instanceId
-      })
-    })
-  })
-
-  const max = Math.max(...possibleAttackResults.map(result => result.attackingCardRemainingHealth))
-  const min = Math.min(...possibleAttackResults.map(result => result.defendingCardRemainingHealth))
-
-  // if ward
-  const { opponentsWithWards, opponentsWithoutWards } = possibleOpponentAttacks.reduce((acc, card) => {
-    if (checkHasAbility({ card, ability: WARD })) {
-      acc = acc.opponentsWithWards.concat(card)
-    } else {
-      acc = acc.opponentsWithoutWards.concat(card)
-    }
-
-    return acc
-  }, { opponentsWithWards: [], opponentsWithoutWards: []})
-
-  // wards:
-
-  // possibleOpponentAttacks
-}*/
 
 export const getPlayCommand = ({ myCardsOnBoard, opponentCardsOnBoard }) => {
   let opponentGuards = findGuards(opponentCardsOnBoard)
@@ -142,57 +101,3 @@ export const getPlayCommand = ({ myCardsOnBoard, opponentCardsOnBoard }) => {
 
   return command.trim()
 }
-
-
-var combination = { codes: [], result: [], counter: 0 };
-
-
-var getCombinations = function (allOptionsArray, combination) {
-  if (allOptionsArray.length > 0) {
-    for (var i = 0; i < allOptionsArray[0].length; i++) {
-      var tmp = allOptionsArray.slice(0);
-      combination.codes[combination.counter] = allOptionsArray[0][i];
-      tmp.shift();
-      combination.counter++;
-      getCombinations(tmp, combination);
-    }
-  } else {
-    var combi = combination.codes.slice(0);
-    combination.result.push(combi);
-  }
-  combination.counter--;
-}
-
-//use it:
-var a = ["01", "02", "03"];
-var b = ["white", "green", "blue"];
-
-var allOptionsArray = [a, b];
-
-getCombinations(allOptionsArray, combination);
-
-for (var i = 0; i < combination.result.length; i++) {
-  console.log(combination.result[i]);
-}
-
-function cartesian() {
-  var r = [], arg = arguments, max = arg.length - 1;
-
-  function helper(arr, i) {
-    for (var j = 0, l = arg[i].length; j < l; j++) {
-      var a = arr.slice(0);
-// clone arr
-      a.push(arg[i][j])
-      if (i == max) {
-        r.push(a);
-      } else {
-        helper(a, i + 1);
-      }
-    }
-  }
-  helper([], 0);
-  return r;
-
-}
-
-cartesian([1,2,3], ['A', 'B', 'C'])
