@@ -11,9 +11,9 @@ const getAllSubsets = myCardsInHand => myCardsInHand.reduce(
 
 const sumCards = cards => cards.reduce((sum, card) => sum + card.cost, 0)
 
-export const getSummonCommand = ({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard }) => {
+export const summonCards = ({ player, myCardsInHand, myCardsOnBoard }) => {
   let command = ''
-
+  let cardsToSummon = []
   if (myCardsOnBoard.length < MAX_CARDS_ON_BOARD && myCardsInHand.length > 0) {
     let remainingMana = player.get(MANA)
 
@@ -26,7 +26,7 @@ export const getSummonCommand = ({ player, myCardsInHand, myCardsOnBoard, oppone
 
 
     const maxTotalCostToPlay = Math.max(...possibleCardsToPlay.map(cards => cards.totalCost))
-    const cardsToSummon = possibleCardsToPlay
+    cardsToSummon = possibleCardsToPlay
       .find(cards => cards.totalCost === maxTotalCostToPlay)
 
     command = cardsToSummon.cards.reduce((command, card) => {
@@ -36,5 +36,8 @@ export const getSummonCommand = ({ player, myCardsInHand, myCardsOnBoard, oppone
     }, '')
   }
 
-  return command.trim()
+  return {
+    summonCommand: command.trim(),
+    summonedCards: cardsToSummon.cards
+  }
 }

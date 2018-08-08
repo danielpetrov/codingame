@@ -2,7 +2,7 @@ import mutatis from 'mutatis'
 import { playerInitialDetails } from "./initialState"
 import { HEALTH, MANA, DECK_SIZE, CARDS_IN_HAND_COUNT } from './constants'
 import { pick } from './pick'
-import { getSummonCommand } from "./getSummonCommand"
+import { summonCards } from "./summonCards"
 import { getPlayCommand } from "./getPlayCommand";
 
 let player = mutatis(playerInitialDetails)
@@ -54,8 +54,9 @@ while (true) {
 
     let output = ''
 
-    output += getSummonCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
-    output += getPlayCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
+    const { summonCommand, summonedCards } = summonCards({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
+    output += summonCommand
+    output += getPlayCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard, myCardsSummonedThisTurn: summonedCards })
 
     if (output === '') {
       output = 'PASS'
