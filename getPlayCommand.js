@@ -84,8 +84,8 @@ const getAttackResults = ({ attackingCard, defendingCard }) => ({
   defendingCardRemainingHealth: takeDamage({ attackingCard, defendingCard }),
   attackingCardRemainingHealth: takeDamage({ attackingCard: defendingCard, defendingCard: attackingCard }),
   healthGained: 0, // TODO: implement
-  defendingCardAbilities: defendingCard.abilities.replace('w', '-'),
-  attackingCardAbilities: attackingCard.abilities.replace('w', '-')
+  defendingCardAbilities: defendingCard.abilities.replace(/W/g, '-'),
+  attackingCardAbilities: attackingCard.abilities.replace(/W/g, '-')
 })
 
 const MAX_CARDS_WITH_COMBINATIONS = 7
@@ -137,6 +137,7 @@ const getAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack }) =
         const defendingCard = opponentCardsAfterBattle[defendingCardIndex]
 
         // if already terminated
+        // printErr('terminated at check', terminatedOpponentCreatures, defendingCard.instanceId, terminatedOpponentCreatures.indexOf(defendingCard.instanceId) !== -1)
         if (terminatedOpponentCreatures.indexOf(defendingCard.instanceId) !== -1) {
           myCreaturesThatDidntAttack.push(attackingCard)
 
@@ -148,17 +149,20 @@ const getAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack }) =
           defendingCard
         })
 
-        //printErr('defendingCardRemainingHealth', defendingCardRemainingHealth, attackingCard.instanceId, defendingCard.instanceId)
+        // printErr('defendingCardRemainingHealth', defendingCardRemainingHealth, attackingCard.instanceId, defendingCard.instanceId, defendingCardRemainingHealth === 0 && terminatedOpponentCreatures.indexOf(defendingCard.instanceId) === -1)
         if (defendingCardRemainingHealth === 0 && terminatedOpponentCreatures.indexOf(defendingCard.instanceId) === -1) {
           terminatedOpponentCreatures.push(defendingCard.instanceId)
+          // printErr('terminated after push', terminatedOpponentCreatures)
         }
 
         //printErr('indexes', attackingCardIndex, defendingCardIndex, myCardsAfterBattle[attackingCardIndex].instanceId, opponentCardsAfterBattle[defendingCardIndex].instanceId)
+        // printErr('ab1', opponentCardsAfterBattle[defendingCardIndex].abilities)
         opponentCardsAfterBattle[defendingCardIndex] = {
           ...defendingCard,
           defense: defendingCardRemainingHealth,
           abilities: defendingCardAbilities
         }
+        // printErr('ab2', opponentCardsAfterBattle[defendingCardIndex].abilities)
         myCardsAfterBattle[attackingCardIndex] = {
           ...attackingCard,
           defense: attackingCardRemainingHealth,
