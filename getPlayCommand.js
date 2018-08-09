@@ -1,4 +1,4 @@
-import { CHARGE, GUARD, LETHAL, WARD } from "./constants"
+import { CHARGE, GUARD, HEALTH, LETHAL, WARD } from "./constants"
 import { checkHasAbility } from "./utils"
 import { getCardInitialValue } from './pick'
 
@@ -11,8 +11,6 @@ const findCardsOnBoardValue = cards => cards.reduce((value, card) => {
 }, 0)
 
 const getMonstersOnBoardValue = ({ opponentCardsOnBoard, myCardsOnBoard }) => {
-  printErr('opponentCardsOnBoard', opponentCardsOnBoard.length, findCardsOnBoardValue(opponentCardsOnBoard))
-  printErr('myCardsOnBoard', myCardsOnBoard.length, findCardsOnBoardValue(myCardsOnBoard))
   const opponentValue = findCardsOnBoardValue(opponentCardsOnBoard)
   const myValue = findCardsOnBoardValue(myCardsOnBoard)
 
@@ -87,13 +85,31 @@ const getAttackResults = ({ attackingCard, defendingCard }) => ({
   wardsLost: 0 // TODO: implement
 })
 
-const getAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack }) => {
+const getAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack, withPermutations }) => {
   const allAttackingCombinations = getCombinations(myCardsThatCanAttack.length, opponentDefendingCards.length)
 
   //allAttackingCombinations.forEach()
   const allCombinations = allAttackingCombinations.reduce((acc, combination) => {
     // myCardsThatCanAttack lenght and combinations length should be the same.
-    const attackingPermutations = getPermutations(myCardsThatCanAttack.map((card, i) => i))
+    let attackingPermutations
+    if (withPermutations) {
+      attackingPermutations = getPermutations(myCardsThatCanAttack.map((card, i) => i))
+    } else {
+      attackingPermutations = [
+        myCardsThatCanAttack
+        .sort((card1, card2) => {
+          if (getCardInitialValue(card1) > getCardInitialValue(card2)) {
+            return 1
+          }
+          if (getCardInitialValue(card1) < getCardInitialValue(card2)) {
+            return -1
+          }
+
+          return 0
+        })
+        .map((card, i) => i)
+      ]
+    }
 
     attackingPermutations.forEach(permutation => {
       combination = combination.toString()
@@ -110,7 +126,7 @@ const getAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack }) =
 
         // if already terminated
         if (terminatedOpponentCreatures.indexOf(defendingCard.instanceId) !== -1) {
-          myCreaturesThatDidntAttack.push(attackingCard.instanceId)
+          myCreaturesThatDidntAttack.push(attackingCard)
 
           return
         }
@@ -127,14 +143,15 @@ const getAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack }) =
 
       acc.push({
         attacks: permutation.map((value, index) => ({
-          defendingCardInstanceId: opponentDefendingCards[combination[index]].instanceId,
-          attackingCardInstanceId: myCardsThatCanAttack[index].instanceId
+          defendingCardInstanceId: opponentCardsAfterBattle[combination[index]].instanceId,
+          attackingCardInstanceId: myCardsAfterBattle[index].instanceId
         })),
         monstersOnBoardValue: getMonstersOnBoardValue({
           myCardsOnBoard: myCardsAfterBattle.filter(card => card.defense > 0),
           opponentCardsOnBoard: opponentCardsAfterBattle.filter(card => card.defense > 0)
         }),
-        myCreaturesThatDidntAttack
+        myCreaturesThatDidntAttack,
+        terminatedOpponentCreatures
       })
     })
 
@@ -144,51 +161,94 @@ const getAllAttackResults = ({ opponentDefendingCards, myCardsThatCanAttack }) =
   return allCombinations
 }
 
-export const getPlayCommand = ({ myCardsOnBoard, myCardsSummonedThisTurn, opponentCardsOnBoard }) => {
-  let opponentGuards = findGuards(opponentCardsOnBoard)
+const attackOpponent = cards => {
+  let command = ''
 
-  const myCardsThatCanAttack = myCardsOnBoard.filter(cardOnBoard => {
+  cards.forEach(card => {
+    command += `ATTACK ${card.instanceId} -1 Don't worry! Be happy!; `
+  })
+
+  return command.trim()
+}
+
+const getBestAttacks = ({ myCards, opponentCards, withPermutations }) => {
+  const attackingResults = getAllAttackResults({
+    myCardsThatCanAttack: myCards,
+    opponentDefendingCards: opponentCards,
+    withPermutations
+  })
+
+  const opponentMinResult = Math.min(...attackingResults.map(res => res.monstersOnBoardValue.opponentValue))
+  const oppMinAttackingResults = attackingResults.filter(res => res.monstersOnBoardValue.opponentValue === opponentMinResult)
+  const maxResult = Math.max(...oppMinAttackingResults.map(res => res.monstersOnBoardValue.myValue))
+
+  return attackingResults.find(res => {
+    return res.monstersOnBoardValue.opponentValue === opponentMinResult && res.monstersOnBoardValue.myValue === maxResult
+  })
+}
+
+const MAX_CARDS_WITH_PERTMUTATIONS = 5
+
+export const getPlayCommand = ({ player, myCardsOnBoard, myCardsSummonedThisTurn = [], opponentCardsOnBoard }) => {
+  let myCardsThatCanAttack = myCardsOnBoard.filter(cardOnBoard => {
       const summonedCard = myCardsSummonedThisTurn.find(cardSummonedThisTurn => cardSummonedThisTurn.instanceId === cardOnBoard.instanceId)
 
       if (summonedCard) {
         return checkHasAbility({ card: summonedCard, ability: CHARGE })
       }
 
-      return true
+      return cardOnBoard.attack > 0
     }
   )
 
   // attack guards
   if (myCardsThatCanAttack.length > 0) {
     let command = ''
+    let opponentGuards = findGuards(opponentCardsOnBoard)
+    let opponentCardsWithoutGuard = opponentCardsOnBoard.filter(card => !checkHasAbility({ card, ability: GUARD }))
 
     if (opponentGuards.length > 0) {
-      const attackingResults = getAllAttackResults({
-        myCardsThatCanAttack,
-        opponentDefendingCards: opponentGuards
-      })
+      const bestAttacks = getBestAttacks({ myCards: myCardsThatCanAttack, opponentCards: opponentGuards, withPermutations: myCardsThatCanAttack.length < 4 && opponentGuards.length < 4 })
 
-      const opponentMinResult = Math.min(...attackingResults.map(res => res.monstersOnBoardValue.opponentValue))
-      const oppMinAttackingResults = attackingResults.filter(res => res.monstersOnBoardValue.opponentValue === opponentMinResult)
-      const maxResult = Math.max(...oppMinAttackingResults.map(res => res.monstersOnBoardValue.myValue))
-
-      const bestAttack = attackingResults.find(res => {
-        return res.monstersOnBoardValue.opponentValue === opponentMinResult && res.monstersOnBoardValue.myValue === maxResult
-      })
-
-      bestAttack.attacks.forEach(attack => {
+      bestAttacks.attacks.forEach(attack => {
         command += `ATTACK ${attack.attackingCardInstanceId} ${attack.defendingCardInstanceId}; `
       })
 
-      if (bestAttack.myCreaturesThatDidntAttack.length > 0) {
-        bestAttack.myCreaturesThatDidntAttack.forEach(creature => {
-          command += `ATTACK ${creature} -1 Don't worry! Be happy!; `
-        })
+      if (bestAttacks.terminatedOpponentCreatures.length > 0) {
+        opponentGuards = opponentGuards.filter(card => !bestAttacks.terminatedOpponentCreatures.some(instanceId => instanceId === card.instanceId))
       }
-    } else {
-      myCardsThatCanAttack.forEach(card => {
-        command += `ATTACK ${card.instanceId} -1 Don't worry! Be happy!; `
-      })
+
+      myCardsThatCanAttack = bestAttacks.myCreaturesThatDidntAttack
+    }
+
+    if (myCardsThatCanAttack.length > 0 && opponentGuards.length === 0) {
+      if (opponentCardsWithoutGuard.length > 0) {
+        const opponentCardsOnBoardTotalDamage = opponentCardsWithoutGuard.reduce((sum, card) => {
+          sum += card.attack
+
+          return sum
+        }, 0)
+
+        if (opponentCardsOnBoardTotalDamage >= player.get(HEALTH)) {
+          // printErr('bla2', myCardsThatCanAttack.length, opponentCardsWithoutGuard.length, command)
+
+          const bestAttacks = getBestAttacks({ myCards: myCardsThatCanAttack, opponentCards: opponentCardsWithoutGuard, withPermutations: myCardsThatCanAttack.length < 4 && opponentCardsWithoutGuard.length < 4 })
+
+          bestAttacks.attacks.forEach(attack => {
+            command += `ATTACK ${attack.attackingCardInstanceId} ${attack.defendingCardInstanceId}; `
+          })
+
+          if (bestAttacks.terminatedOpponentCreatures.length > 0) {
+            opponentCardsWithoutGuard = opponentCardsWithoutGuard.filter(card => !bestAttacks.terminatedOpponentCreatures.some(instanceId => instanceId === card.instanceId))
+          }
+
+          myCardsThatCanAttack = bestAttacks.myCreaturesThatDidntAttack
+        }
+      }
+
+      if (myCardsThatCanAttack.length > 0) {
+        command += attackOpponent(myCardsThatCanAttack)
+      }
     }
 
     return command.trim()
