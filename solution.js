@@ -56,7 +56,7 @@ while (true) {
 
     const { summonCommand, summonedCards } = summonCards({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard })
     output += summonCommand
-    output += getPlayCommand({ player, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard, myCardsSummonedThisTurn: summonedCards })
+    output += getPlayCommand({ player, opponent, myCardsInHand, myCardsOnBoard, opponentCardsOnBoard, myCardsSummonedThisTurn: summonedCards })
 
     if (output === '') {
       output = 'PASS'

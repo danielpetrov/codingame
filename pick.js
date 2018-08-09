@@ -110,7 +110,6 @@ export const pick = ({ cards }) => {
   const cardValues = cards.map(getCardValue)
   const max = Math.max(...cardValues)
 
-  printErr(...cardValues)
   const indexOfCardToPick = cardValues.indexOf(max)
   const cardToPick = cards[indexOfCardToPick]
 
