@@ -54,7 +54,7 @@ export const getClosesKnightToQueen = ({ enemyKnights, queen }) => {
 }
 
 export const getBuildMineToTheMaxCommand = ({ mine }) => {
-    console.error('build mine')
+    console.error('build mine', mine)
     if (mine.isTouchedByQueen) {
         return `BUILD ${mine.id} ${MINE}`
     } else {
