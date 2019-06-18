@@ -54,6 +54,7 @@ export const getClosesKnightToQueen = ({ enemyKnights, queen }) => {
 }
 
 export const getBuildMineToTheMaxCommand = ({ mine }) => {
+    console.error('build mine')
     if (mine.isTouchedByQueen) {
         return `BUILD ${mine.id} ${MINE}`
     } else {
@@ -61,6 +62,7 @@ export const getBuildMineToTheMaxCommand = ({ mine }) => {
     }
 }
 export const getBuildTowerToTheMaxCommand = ({ tower }) => {
+    console.error('build tower')
     if (tower.isTouchedByQueen) {
         return `BUILD ${tower.id} ${TOWER}`
     } else {
@@ -68,6 +70,7 @@ export const getBuildTowerToTheMaxCommand = ({ tower }) => {
     }
 }
 export const getBuildBarracksCommand = ({ barrack, trainingBuildings }) => {
+    console.error('build barrack')
     if (barrack.isTouchedByQueen) {
         trainingBuildings.addId(barrack.id)
         return `BUILD ${barrack.id} ${BARRACKS_TYPE_KNIGHT}`
