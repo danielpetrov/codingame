@@ -1,10 +1,22 @@
-import {getInBounderies} from "./utils"
+import {findNearestBuilding, getInBounderies} from "./utils"
 
-export const getRunFromKnightsCommand = ({ closestKnightToQueen, queen, safeFriendlyTowers, enemyTowers }) => {
-    const safeCoordinates = {
-        x: safeFriendlyTowers[0].x,
-        y: safeFriendlyTowers[0].y
+export const getRunFromKnightsCommand = ({ closestKnightToQueen, queen, safeFriendlyTowers, enemyTowers, friendlyBarracks }) => {
+    const firstBarrack = friendlyBarracks[0]
+    let safeCoordinates
+    if (firstBarrack.distanceToQueen > 180 || safeFriendlyTowers.length === 0) {
+        safeCoordinates = {
+            x: friendlyBarracks[0].x,
+            y: friendlyBarracks[0].y
+        }
+    } else {
+        const nearestTowerToRun = findNearestBuilding({ buildingsArray: safeFriendlyTowers.filter(tower => tower.distanceToQueen > 180 )})
+
+        safeCoordinates = {
+            x: nearestTowerToRun.x,
+            y: nearestTowerToRun.y
+        }
     }
+
 
     return `MOVE ${safeCoordinates.x} ${safeCoordinates.y}`
 

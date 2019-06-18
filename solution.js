@@ -16,7 +16,7 @@ import {
   calculateDistance,
   findNearestBuilding,
   isTowerUpgradedToTheMax,
-  getClosesKnightToQueen,
+  getClosestKnightToQueen,
   isMineUpgradedToTheMax,
   getBuildMineToTheMaxCommand,
   getBuildTowerToTheMaxCommand,
@@ -60,6 +60,16 @@ const checkIfBuildingIsSafeToBuildUpon = ({ building, enemyTowers }) =>
       })
   )
 
+const getBuildTowersCommand = ({ safeFriendlyTowersNotUpgradedToMax, safeNeutralBuildings }) => {
+  if (safeFriendlyTowersNotUpgradedToMax.length > 0) { // should upgrade tower
+    return getBuildTowerToTheMaxCommand({ tower: findNearestBuilding({ buildingsArray: safeFriendlyTowersNotUpgradedToMax }) })
+  } else {
+    const nearestNeutralBuilding = findNearestBuilding({ buildingsArray: safeNeutralBuildings })
+
+    return getBuildTowerToTheMaxCommand({ tower: nearestNeutralBuilding })
+  }
+}
+
 const getMoveOrBuildCommand = ({ queen, units, buildings, trainingBuildings }) => {
   const enemyKnights = units.filter(unit => unit.owner === ENEMY && unit.type === KNIGHT)
   const enemyBuildings = Object.values(buildings).filter(building => building.owner === ENEMY)
@@ -88,10 +98,10 @@ const getMoveOrBuildCommand = ({ queen, units, buildings, trainingBuildings }) =
   const safeFriendlyTowersNotUpgradedToMax = safeFriendlyTowers.filter(tower => !isTowerUpgradedToTheMax({ tower }))
 
   trainingBuildings.setIds(friendlyBarracks.map(barrack => barrack.id))
-  const closestKnightToQueen = getClosesKnightToQueen({ queen, enemyKnights })
-console.error(closestKnightToQueen)
-  if (enemyKnights.length > 0 && closestKnightToQueen.distanceToQueen < 20) { // should run from knights
-    return getRunFromKnightsCommand({ queen, closestKnightToQueen, safeFriendlyTowers, enemyTowers })
+  const closestKnightToQueen = getClosestKnightToQueen({ queen, enemyKnights })
+
+  if (enemyKnights.length > 0 && closestKnightToQueen.distanceToQueen < 200) { // should run from knights
+    return getRunFromKnightsCommand({ queen, closestKnightToQueen, safeFriendlyTowers, enemyTowers, friendlyBarracks })
   } else if (friendlyBarracks.length < 1) { // should build barracks
     const barrack = findNearestBuilding({
       buildingsArray: nonEnemyBuildings.filter(building => building.owner === NEUTRAL)
@@ -112,14 +122,7 @@ console.error(closestKnightToQueen)
   } else if ((friendlyTowers.length < NUMBER_OF_TOWERS_TO_BUILD && safeNeutralBuildings.length > 0)  //shouldBuildTowers
       || (friendlyTowers.length === NUMBER_OF_TOWERS_TO_BUILD && safeFriendlyTowersNotUpgradedToMax.length > 0)) {
 
-
-    if (safeFriendlyTowersNotUpgradedToMax.length > 0) { // should upgrade tower
-      return getBuildTowerToTheMaxCommand({ tower: findNearestBuilding({ buildingsArray: safeFriendlyTowersNotUpgradedToMax }) })
-    } else {
-      const nearestNeutralBuilding = findNearestBuilding({ buildingsArray: safeNeutralBuildings })
-
-      return getBuildTowerToTheMaxCommand({ tower: nearestNeutralBuilding })
-    }
+    return getBuildTowersCommand({ safeFriendlyTowersNotUpgradedToMax, safeNeutralBuildings })
   } else {
     return 'WAIT'
   }

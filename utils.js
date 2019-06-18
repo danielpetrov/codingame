@@ -33,7 +33,7 @@ export const getInBounderies = ({ x, y }) => {
     return { x, y }
 }
 
-export const getClosesKnightToQueen = ({ enemyKnights, queen }) => {
+export const getClosestKnightToQueen = ({ enemyKnights, queen }) => {
     return enemyKnights.reduce((acc, knight) => {
         const distanceToQueen = calculateDistance({
             x1: queen.x,
