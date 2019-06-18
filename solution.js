@@ -108,8 +108,9 @@ const getMoveOrBuildCommand = ({ queen, units, buildings, trainingBuildings }) =
     })
 
     return getBuildBarracksCommand({ barrack, trainingBuildings })
-  } else if ((friendlyMines.length < NUMBER_OF_MINES_TO_BUILD && safeNeutralBuildingsThatMineCanBeBuildUpon.length > 0) // should build mines
-      || (friendlyMines.length === NUMBER_OF_MINES_TO_BUILD && safeFriendlyMinesNotUpgradedToMax.length > 0)
+  } else if (enemyKnights.length < 5 &&
+      ((friendlyMines.length < NUMBER_OF_MINES_TO_BUILD && safeNeutralBuildingsThatMineCanBeBuildUpon.length > 0) // should build mines
+      || (friendlyMines.length === NUMBER_OF_MINES_TO_BUILD && safeFriendlyMinesNotUpgradedToMax.length > 0))
   ) {
 
     if (safeFriendlyMinesNotUpgradedToMax.length > 0) { // should upgrade existing mine

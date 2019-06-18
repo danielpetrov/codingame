@@ -11,6 +11,14 @@ export const findNearestBuilding = ({ buildingsArray }) => buildingsArray
         return acc
     }, { distanceToQueen: 99999 })
 
+export const findFarestBuilding = ({ buildingsArray }) => buildingsArray
+    .reduce((acc, building) => {
+        if (building.distanceToQueen > acc.distanceToQueen) {
+            acc = building
+        }
+
+        return acc
+    }, { distanceToQueen: 0 })
 export const isMineUpgradedToTheMax = ({ mine }) =>
     (mine.incomeRate === mine.maxMineSize) || (mine.gold < 10 && mine.gold !== -1)
 
