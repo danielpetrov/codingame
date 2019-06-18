@@ -43,17 +43,19 @@ for (let i = 0; i < numberOfBuildings; i++) {
 }
 
 
-const getMoveOrBuildCommand = ({ queen, units, buildings }) => {
+const getMoveOrBuildCommand = ({ queen, units, buildings, trainingBuildings }) => {
   const enemyKnights = units.filter(unit => unit.owner === ENEMY && unit.type === KNIGHT)
   const friendlyBuildings = Object.values(buildings).filter(building => building.owner === ALLY)
   const neutralBuildings = Object.values(buildings).filter(building => building.owner === NEUTRAL)
   const nonEnemyBuildings = friendlyBuildings.concat(neutralBuildings)
   const friendlyBarracks = Object.values(friendlyBuildings).filter(building => building.type === BARRACKS)
-  const mines = Object.values(friendlyBuildings).filter(building => building.type === MINE)
+  const friendlyMines = Object.values(friendlyBuildings).filter(building => building.type === MINE)
   const friendlyTowers = Object.values(friendlyBuildings).filter(building => building.type === TOWER)
 
-  const minesNotUpgradedToMax = mines.filter(mine => !isMineUpgradedToTheMax({ mine }))
+  const friendlyMinesNotUpgradedToMax = friendlyMines.filter(mine => !isMineUpgradedToTheMax({ mine }))
   const friendlyTowersNotUpgradedToMax = friendlyTowers.find(tower => !isTowerUpgradedToTheMax({ tower }))
+
+  trainingBuildings.setIds(friendlyBarracks.map(barrack => barrack.id))
 
   if (enemyKnights.length > 0) { // should run from knights
     const closestKnightToQueen = getClosesKnightToQueen({ queen, enemyKnights })
@@ -66,19 +68,20 @@ const getMoveOrBuildCommand = ({ queen, units, buildings }) => {
       buildingsArray: nonEnemyBuildings.filter(building => building.owner === NEUTRAL)
     })
 
-    return getBuildBarracksCommand({ barrack })
-  } else if (mines.length < NUMBER_OF_MINES_TO_BUILD  // should build mines
-      || !(mines.length === NUMBER_OF_MINES_TO_BUILD && minesNotUpgradedToMax.length > 0)) {
+    return getBuildBarracksCommand({ barrack, trainingBuildings })
+  } else if (friendlyMines.length < NUMBER_OF_MINES_TO_BUILD  // should build mines
+      || !(friendlyMines.length === NUMBER_OF_MINES_TO_BUILD && friendlyMinesNotUpgradedToMax.length > 0)) {
 
-    if (minesNotUpgradedToMax.length > 0) { // should upgrade existing mine
-      const nearestNotUpgradedMine = minesNotUpgradedToMax.length === 1 ?
-          minesNotUpgradedToMax[0]
-          : findNearestBuilding({ buildingsArray: minesNotUpgradedToMax })
+    if (friendlyMinesNotUpgradedToMax.length > 0) { // should upgrade existing mine
+      const nearestNotUpgradedMine = friendlyMinesNotUpgradedToMax.length === 1 ?
+          friendlyMinesNotUpgradedToMax[0]
+          : findNearestBuilding({ buildingsArray: friendlyMinesNotUpgradedToMax })
 
       return getBuildMineToTheMaxCommand({ mine: nearestNotUpgradedMine })
-    } else { // should build new mine
+    } else { // should build new mine+
+
       const nearestMine = findNearestBuilding({
-        buildingsArray: nonEnemyBuildings.filter(building => building.type === MINE && !isMineUpgradedToTheMax({ mine: building }))
+        buildingsArray: neutralBuildings.filter(building => !isMineUpgradedToTheMax({ mine: building })) // building.type === MINE &&
       })
 
       return getBuildMineToTheMaxCommand({ mine: nearestMine })
@@ -117,6 +120,22 @@ const getMoveOrBuildCommand = ({ queen, units, buildings }) => {
 const NUMBER_OF_TOWERS_TO_BUILD = 2
 export const NUMBER_OF_MINES_TO_BUILD = 3
 
+const getTrainingBuildings = () => {
+  let ids = []
+
+  return {
+    getIds: () => {
+      return ids
+    },
+    addId: (id) => {
+      ids.push(id)
+    },
+    setIds: (newIds) => {
+      ids = newIds
+    }
+  }
+}
+
 // game loop
 while (true) {
   const inputs = readline().split(' ')
@@ -124,6 +143,7 @@ while (true) {
   const touchedBuildingByQueen = parseInt(inputs[1]) // -1 if none
 
   const buildings = {}
+  const trainingBuildings = getTrainingBuildings()
 
   for (let i = 0; i < numberOfBuildings; i++) {
     const inputs = readline().split(' ')
@@ -184,18 +204,17 @@ while (true) {
   const moveOrBuildCommand = getMoveOrBuildCommand({
     queen,
     units,
-    buildings
+    buildings,
+    trainingBuildings
   })
 
   print(moveOrBuildCommand)
 
   const shouldTrain = true
 
-  if (shouldTrain) {
-    if (trainingBuilding.length > 0) {
-      print(`TRAIN ${trainingBuilding.join(' ')}`)
-    } else {
-      print('TRAIN')
-    }
+  if (trainingBuildings.getIds().length > 0 && shouldTrain) {
+    print(`TRAIN ${trainingBuildings.getIds().join(' ')}`)
+  } else {
+    print('TRAIN')
   }
 }

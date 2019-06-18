@@ -5,19 +5,16 @@ export const calculateDistance = ({ x1, y1, x2, y2 }) => Math.sqrt(Math.pow(x2 -
 export const findNearestBuilding = ({ buildingsArray }) => buildingsArray
     .reduce((acc, building) => {
         if (building.distanceToQueen < acc.distanceToQueen) {
-            acc.distanceToQueen = building.distanceToQueen
-            acc.buildingId = building.id
+            acc = building
         }
 
         return acc
-    }, { distanceToQueen: 3000, buildingId: -1 })
+    }, { distanceToQueen: 3000 })
 
 export const isMineUpgradedToTheMax = ({ mine }) =>
     (mine.incomeRate === mine.maxMineSize) || (mine.gold < 10 && mine.gold !== -1)
 
 export const isTowerUpgradedToTheMax = ({ tower }) => tower.towerHp > 720
-
-export const isQueenTouchingBuilding = ({ buildings, buildingId }) => buildings[buildingId].isTouchedByQueen
 
 export const getInBounderies = ({ x, y }) => {
     if (x < 0) {
@@ -65,14 +62,15 @@ export const getBuildMineToTheMaxCommand = ({ mine }) => {
 }
 export const getBuildTowerToTheMaxCommand = ({ tower }) => {
     if (tower.isTouchedByQueen) {
-        return `BUILD ${buildingId} ${TOWER}`
+        return `BUILD ${tower.id} ${TOWER}`
     } else {
         return `MOVE ${tower.x} ${tower.y}`
     }
 }
-export const getBuildBarracksCommand = ({ barrack }) => {
+export const getBuildBarracksCommand = ({ barrack, trainingBuildings }) => {
     if (barrack.isTouchedByQueen) {
-        return `BUILD ${barrack} ${BARRACKS_TYPE_KNIGHT}`
+        trainingBuildings.addId(barrack.id)
+        return `BUILD ${barrack.id} ${BARRACKS_TYPE_KNIGHT}`
     } else {
         return `MOVE ${barrack.x} ${barrack.y}`
     }
