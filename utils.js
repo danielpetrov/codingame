@@ -9,12 +9,12 @@ export const findNearestBuilding = ({ buildingsArray }) => buildingsArray
         }
 
         return acc
-    }, { distanceToQueen: 3000 })
+    }, { distanceToQueen: 99999 })
 
 export const isMineUpgradedToTheMax = ({ mine }) =>
     (mine.incomeRate === mine.maxMineSize) || (mine.gold < 10 && mine.gold !== -1)
 
-export const isTowerUpgradedToTheMax = ({ tower }) => tower.towerHp > 720
+export const isTowerUpgradedToTheMax = ({ tower }) => tower.towerHp > 650
 
 export const getInBounderies = ({ x, y }) => {
     if (x < 0) {
@@ -54,7 +54,7 @@ export const getClosesKnightToQueen = ({ enemyKnights, queen }) => {
 }
 
 export const getBuildMineToTheMaxCommand = ({ mine }) => {
-    console.error('build mine', mine)
+    console.error('build mine')
     if (mine.isTouchedByQueen) {
         return `BUILD ${mine.id} ${MINE}`
     } else {
