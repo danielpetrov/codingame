@@ -1,4 +1,4 @@
-import {BARRACKS_TYPE_KNIGHT, MINE, TOWER} from "./constants"
+import {BARRACKS_TYPE_ARCHER, BARRACKS_TYPE_KNIGHT, MINE, TOWER} from "./constants"
 
 export const calculateDistance = ({ x1, y1, x2, y2 }) => Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
 
@@ -84,5 +84,78 @@ export const getBuildBarracksCommand = ({ barrack, trainingBuildings }) => {
         return `BUILD ${barrack.id} ${BARRACKS_TYPE_KNIGHT}`
     } else {
         return `MOVE ${barrack.x} ${barrack.y}`
+    }
+}
+export const getBuildArchersCommand = ({ barrack, trainingBuildings }) => {
+    console.error('build barrack')
+    if (barrack.isTouchedByQueen) {
+        trainingBuildings.addId(barrack.id)
+        return `BUILD ${barrack.id} ${BARRACKS_TYPE_ARCHER}`
+    } else {
+        return `MOVE ${barrack.x} ${barrack.y}`
+    }
+}
+export const checkIfInRadius = ({ x1, y1, x_center, y_center, radius }) => {
+    // console.error('checkIfInRadius', x1, x_center, y1, y_center, radius)
+    // console.error('calc', ((x1 - x_center) * (x1 - x_center)) + ((y1 - y_center) * (y1 - y_center)), radius * radius)
+    // console.error('result', ((x1 - x_center) * (x1 - x_center)) + ((y1 - y_center) * (y1 - y_center)) < radius * radius)
+    return ((x1 - x_center) * (x1 - x_center)) + ((y1 - y_center) * (y1 - y_center)) < radius * radius
+}
+
+export const checkIfBuildingIsSafeToBuildUpon = ({ building, enemyTowers }) =>
+    !enemyTowers.some(enemyTower =>
+        checkIfInRadius({
+            x1: building.x,
+            y1: building.y,
+            x_center: enemyTower.x,
+            y_center: enemyTower.y,
+            radius: enemyTower.attackRadius
+        })
+    )
+
+export const getBuildTowersCommand = ({ safeFriendlyTowersNotUpgradedToMax, safeNeutralBuildings }) => {
+    if (safeFriendlyTowersNotUpgradedToMax.length > 0) { // should upgrade tower
+        return getBuildTowerToTheMaxCommand({ tower: findNearestBuilding({ buildingsArray: safeFriendlyTowersNotUpgradedToMax }) })
+    } else {
+        const nearestNeutralBuilding = findNearestBuilding({ buildingsArray: safeNeutralBuildings })
+
+        return getBuildTowerToTheMaxCommand({ tower: nearestNeutralBuilding })
+    }
+}
+
+export const getTrainingBuildingsFactory = () => {
+    let ids = []
+
+    return {
+        getIds: () => {
+            return ids
+        },
+        addId: (id) => {
+            ids.push(id)
+        },
+        setIds: (newIds) => {
+            ids = newIds
+        }
+    }
+}
+
+export const initialCoordinatesFactory = () => {
+    let coordinates = {}
+    let set = false
+
+    return {
+        setCoordinates: (queen) => {
+            if (!set) {
+                coordinates = {
+                    x: queen.x,
+                    y: queen.y
+                }
+
+                set = true
+            }
+        },
+        getCoordinates: () => {
+            return coordinates
+        }
     }
 }

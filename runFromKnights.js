@@ -1,22 +1,39 @@
 import {findFarestBuilding, findNearestBuilding, getInBounderies} from "./utils"
 
-export const getRunFromKnightsCommand = ({ closestKnightToQueen, queen, safeFriendlyTowers, enemyTowers, friendlyBarracks }) => {
-    const firstBarrack = friendlyBarracks[0]
-    let safeCoordinates
-    if (firstBarrack.distanceToQueen > 180 || safeFriendlyTowers.length === 0) {
-        safeCoordinates = {
-            x: friendlyBarracks[0].x,
-            y: friendlyBarracks[0].y
-        }
-    } else {
-        const farestTowerToRun = findFarestBuilding({ buildingsArray: safeFriendlyTowers.filter(tower => tower.distanceToQueen > 180 )})
+let shouldRunToInitial = true
 
-        safeCoordinates = {
-            x: farestTowerToRun.x,
-            y: farestTowerToRun.y
-        }
+export const getRunFromKnightsCommand = ({ initialCoordinates, queen, safeFriendlyTowers }) => {
+    console.error('run')
+
+    let safeCoordinates = {
+        x: initialCoordinates.x,
+        y: initialCoordinates.y
     }
 
+    if (!shouldRunToInitial && (Math.abs(queen.x - initialCoordinates.x) > 500 || Math.abs(queen.y - initialCoordinates.y) > 500)) {
+        shouldRunToInitial = true
+    }
+
+    if (shouldRunToInitial && (Math.abs(queen.x - initialCoordinates.x) > 100 || Math.abs(queen.y - initialCoordinates.y) > 100)) {
+        return `MOVE ${safeCoordinates.x} ${safeCoordinates.y}`
+    } else {
+        shouldRunToInitial = false
+    }
+
+    const farestTowerY = safeFriendlyTowers.reduce((acc, building) => {
+        if (Math.abs(building.y - queen.y) > acc.y) {
+            acc = building
+        }
+
+        return acc
+    }, { y: 0 })
+
+    if (farestTowerY.id !== undefined) {
+        safeCoordinates = {
+            x: farestTowerY.x,
+            y: farestTowerY.y
+        }
+    }
 
     return `MOVE ${safeCoordinates.x} ${safeCoordinates.y}`
 

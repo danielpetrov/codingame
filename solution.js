@@ -1,5 +1,4 @@
 import {
-  BARRACKS,
   MINE,
   TOWER,
   STRUCTURE_TYPE_ENUMS,
@@ -9,7 +8,10 @@ import {
   ALLY,
   ENEMY,
   NEUTRAL,
-  OWNER_ENUMS
+  OWNER_ENUMS,
+  BARRACKS_TYPE_ENUMS,
+  BARRACKS,
+  ARCHER
 } from './constants'
 
 import {
@@ -19,8 +21,12 @@ import {
   getClosestKnightToQueen,
   isMineUpgradedToTheMax,
   getBuildMineToTheMaxCommand,
-  getBuildTowerToTheMaxCommand,
   getBuildBarracksCommand,
+  checkIfBuildingIsSafeToBuildUpon,
+  getBuildTowersCommand,
+  getBuildArchersCommand,
+  initialCoordinatesFactory,
+  getTrainingBuildingsFactory
 } from './utils'
 import {getRunFromKnightsCommand} from "./runFromKnights"
 
@@ -42,45 +48,31 @@ for (let i = 0; i < numberOfBuildings; i++) {
   }
 }
 
-const checkIfInRadius = ({ x1, y1, x_center, y_center, radius }) => {
-  // console.error('checkIfInRadius', x1, x_center, y1, y_center, radius)
-  // console.error('calc', ((x1 - x_center) * (x1 - x_center)) + ((y1 - y_center) * (y1 - y_center)), radius * radius)
-  // console.error('result', ((x1 - x_center) * (x1 - x_center)) + ((y1 - y_center) * (y1 - y_center)) < radius * radius)
-  return ((x1 - x_center) * (x1 - x_center)) + ((y1 - y_center) * (y1 - y_center)) < radius * radius
-}
+const NUMBER_OF_TOWERS_TO_BUILD = 4
+const NUMBER_OF_MINES_TO_BUILD = 4
+const NUMBER_OF_KNIGHT_BARRACKS_TO_BUILD = 1
+const NUMBER_OF_ARCHERS_BARRACKS_TO_BUILD = 1
 
-const checkIfBuildingIsSafeToBuildUpon = ({ building, enemyTowers }) =>
-    !enemyTowers.some(enemyTower =>
-      checkIfInRadius({
-        x1: building.x,
-        y1: building.y,
-        x_center: enemyTower.x,
-        y_center: enemyTower.y,
-        radius: enemyTower.attackRadius
-      })
-  )
+let shouldTrainKnights = false
+let shouldTrainArchers = false
+let minesBuild = 0
 
-const getBuildTowersCommand = ({ safeFriendlyTowersNotUpgradedToMax, safeNeutralBuildings }) => {
-  if (safeFriendlyTowersNotUpgradedToMax.length > 0) { // should upgrade tower
-    return getBuildTowerToTheMaxCommand({ tower: findNearestBuilding({ buildingsArray: safeFriendlyTowersNotUpgradedToMax }) })
-  } else {
-    const nearestNeutralBuilding = findNearestBuilding({ buildingsArray: safeNeutralBuildings })
-
-    return getBuildTowerToTheMaxCommand({ tower: nearestNeutralBuilding })
-  }
-}
-
-const getMoveOrBuildCommand = ({ queen, units, buildings, trainingBuildings }) => {
+const getMoveOrBuildCommand = ({ queen, units, buildings, knightsTrainingBuildings,
+                                 archersTrainingBuildings, initialCoordinates, gold }) => {
   const enemyKnights = units.filter(unit => unit.owner === ENEMY && unit.type === KNIGHT)
   const enemyBuildings = Object.values(buildings).filter(building => building.owner === ENEMY)
   const enemyTowers = enemyBuildings.filter(building => building.type === TOWER)
+  const friendlyArchers = units.filter(unit => unit.owner === ALLY && unit.type === ARCHER)
+  const enemyBarracks = enemyBuildings.filter(building => building.type === BARRACKS)
+  const enemyKnightBarracks = enemyBarracks.filter(building => building.type === BARRACKS && building.barrackType === KNIGHT)
 
   const friendlyBuildings = Object.values(buildings).filter(building => building.owner === ALLY)
   const safeFriendlyBuildings = friendlyBuildings.filter(building =>
     checkIfBuildingIsSafeToBuildUpon({ building, enemyTowers })
   )
   // console.error('safeFriendlyBuildings', safeFriendlyBuildings)
-  const friendlyBarracks = friendlyBuildings.filter(building => building.type === BARRACKS)
+  const friendlyKnightBarracks = friendlyBuildings.filter(building => building.type === BARRACKS && building.barrackType === KNIGHT)
+  const friendlyArcherBarracks = friendlyBuildings.filter(building => building.type === BARRACKS && building.barrackType === ARCHER)
   const friendlyMines = friendlyBuildings.filter(building => building.type === MINE)
   const friendlyTowers = friendlyBuildings.filter(building => building.type === TOWER)
 
@@ -89,30 +81,52 @@ const getMoveOrBuildCommand = ({ queen, units, buildings, trainingBuildings }) =
 
   const neutralBuildings = Object.values(buildings).filter(building => building.owner === NEUTRAL)
   const safeNeutralBuildings = neutralBuildings.filter(building => checkIfBuildingIsSafeToBuildUpon({ building, enemyTowers }))
-  // console.error('safeNeutralBuildings', safeNeutralBuildings)
-  const nonEnemyBuildings = friendlyBuildings.concat(neutralBuildings)
 
   const safeFriendlyMinesNotUpgradedToMax = safeFriendlyMines.filter(mine => !isMineUpgradedToTheMax({ mine }))
   const safeNeutralBuildingsThatMineCanBeBuildUpon = safeNeutralBuildings.filter(building => building.gold !== 0)
 
   const safeFriendlyTowersNotUpgradedToMax = safeFriendlyTowers.filter(tower => !isTowerUpgradedToTheMax({ tower }))
 
-  trainingBuildings.setIds(friendlyBarracks.map(barrack => barrack.id))
+  if (friendlyArchers.length < enemyKnights.length / 2 && enemyKnightBarracks.length > 0) {
+    shouldTrainArchers = true
+  } else {
+    shouldTrainArchers = false
+  }
+
+  if (enemyTowers.length <= 4) {
+    shouldTrainKnights = true
+  } else {
+    shouldTrainKnights = false
+  }
+
+  if (friendlyMines.length > minesBuild) {
+    minesBuild = friendlyMines.length
+  }
+
+  knightsTrainingBuildings.setIds(friendlyKnightBarracks.map(barrack => barrack.id))
+  archersTrainingBuildings.setIds(friendlyArcherBarracks.map(barrack => barrack.id))
+
   const closestKnightToQueen = getClosestKnightToQueen({ queen, enemyKnights })
 
-  if (enemyKnights.length > 0 && closestKnightToQueen.distanceToQueen < 200) { // should run from knights
-    return getRunFromKnightsCommand({ queen, closestKnightToQueen, safeFriendlyTowers, enemyTowers, friendlyBarracks })
-  } else if (friendlyBarracks.length < 1) { // should build barracks
+  //if (enemyKnights.length > 0 && closestKnightToQueen.distanceToQueen < 300 && friendlyTowers.length !== NUMBER_OF_TOWERS_TO_BUILD) { // should run from knights
+    //return getRunFromKnightsCommand({ initialCoordinates, queen, safeFriendlyTowers })
+  //}else
+  if (shouldTrainArchers && friendlyArcherBarracks.length < NUMBER_OF_ARCHERS_BARRACKS_TO_BUILD && safeNeutralBuildings.length > 0) { // should build archer barracks
     const barrack = findNearestBuilding({
-      buildingsArray: nonEnemyBuildings.filter(building => building.owner === NEUTRAL)
+      buildingsArray: safeNeutralBuildings
     })
 
-    return getBuildBarracksCommand({ barrack, trainingBuildings })
-  } else if (enemyKnights.length < 5 &&
-      ((friendlyMines.length < NUMBER_OF_MINES_TO_BUILD && safeNeutralBuildingsThatMineCanBeBuildUpon.length > 0) // should build mines
-      || (friendlyMines.length === NUMBER_OF_MINES_TO_BUILD && safeFriendlyMinesNotUpgradedToMax.length > 0))
-  ) {
+    return getBuildArchersCommand({ barrack, trainingBuildings: archersTrainingBuildings })
+  } else if (shouldTrainKnights && friendlyKnightBarracks.length < NUMBER_OF_KNIGHT_BARRACKS_TO_BUILD && safeNeutralBuildings.length > 0) { // should build knight barracks
+    const barrack = findNearestBuilding({
+      buildingsArray: safeNeutralBuildings
+    })
 
+    return getBuildBarracksCommand({ barrack, trainingBuildings: knightsTrainingBuildings })
+  } else if (closestKnightToQueen.distanceToQueen > 500 &&
+      ((friendlyMines.length < NUMBER_OF_MINES_TO_BUILD && safeNeutralBuildingsThatMineCanBeBuildUpon.length > 0 && minesBuild < NUMBER_OF_MINES_TO_BUILD) // should build mines
+      || (friendlyMines.length === NUMBER_OF_MINES_TO_BUILD && safeFriendlyMinesNotUpgradedToMax.length > 0 && minesBuild <= NUMBER_OF_MINES_TO_BUILD))
+  ) {
     if (safeFriendlyMinesNotUpgradedToMax.length > 0) { // should upgrade existing mine
       return getBuildMineToTheMaxCommand({ mine: findNearestBuilding({ buildingsArray: safeFriendlyMinesNotUpgradedToMax }) })
     } else { // should build new mine+
@@ -129,33 +143,16 @@ const getMoveOrBuildCommand = ({ queen, units, buildings, trainingBuildings }) =
   }
 }
 
-const NUMBER_OF_TOWERS_TO_BUILD = 4
-export const NUMBER_OF_MINES_TO_BUILD = 2
-
-const getTrainingBuildings = () => {
-  let ids = []
-
-  return {
-    getIds: () => {
-      return ids
-    },
-    addId: (id) => {
-      ids.push(id)
-    },
-    setIds: (newIds) => {
-      ids = newIds
-    }
-  }
-}
+const initialCoordinates = initialCoordinatesFactory()
 
 // game loop
 while (true) {
   const inputs = readline().split(' ')
-  const gold = parseInt(inputs[0])
+  let gold = parseInt(inputs[0])
   const touchedBuildingByQueen = parseInt(inputs[1]) // -1 if none
-
   const buildings = {}
-  const trainingBuildings = getTrainingBuildings()
+  const knightsTrainingBuildings = getTrainingBuildingsFactory()
+  const archersTrainingBuildings = getTrainingBuildingsFactory()
 
   for (let i = 0; i < numberOfBuildings; i++) {
     const inputs = readline().split(' ')
@@ -178,6 +175,10 @@ while (true) {
       incomeRate: param1,
       attackRadius: Math.sqrt(((param1 * 1000) + (Math.PI * param2 * param2)) / Math.PI),
       ...initialBuildingDetails[id]
+    }
+
+    if (type === BARRACKS) {
+      buildings[id].barrackType = BARRACKS_TYPE_ENUMS[param2] // KNIGHT, ARCHER, GIANT
     }
   }
 
@@ -203,6 +204,8 @@ while (true) {
 
   const queen = units.find(unit => unit.type === QUEEN && unit.owner === ALLY)
 
+  initialCoordinates.setCoordinates(queen)
+
   Object.keys(buildings).map(id => {
     buildings[id].distanceToQueen = calculateDistance({
       x1: queen.x,
@@ -216,15 +219,28 @@ while (true) {
     queen,
     units,
     buildings,
-    trainingBuildings
+    initialCoordinates: initialCoordinates.getCoordinates(),
+    knightsTrainingBuildings,
+    archersTrainingBuildings,
+    gold
   })
 
   console.log(moveOrBuildCommand)
 
-  const shouldTrain = true
+  const buildingsIdsForTraining = []
 
-  if (trainingBuildings.getIds().length > 0 && shouldTrain) {
-    console.log(`TRAIN ${trainingBuildings.getIds().join(' ')}`)
+  if (shouldTrainArchers && gold >= 100 && archersTrainingBuildings.getIds().length > 0) {
+    buildingsIdsForTraining.push(archersTrainingBuildings.getIds())
+    gold -= 100
+  }
+
+  if (shouldTrainKnights && gold >= 80 && knightsTrainingBuildings.getIds().length > 0) {
+    buildingsIdsForTraining.push(knightsTrainingBuildings.getIds())
+    gold -= 80
+  }
+
+  if (buildingsIdsForTraining.length > 0) {
+    console.log(`TRAIN ${buildingsIdsForTraining.join(' ')}`)
   } else {
     console.log('TRAIN')
   }

@@ -9,10 +9,16 @@ export const STRUCTURE_TYPE_ENUMS = {
 export const KNIGHT = 'KNIGHT'
 export const ARCHER = 'ARCHER'
 export const QUEEN = 'QUEEN'
+export const GIANT = 'GIANT'
 export const UNIT_TYPE_ENUMS = {
     '-1': QUEEN,
     '0': KNIGHT,
     '1': ARCHER
+}
+export const BARRACKS_TYPE_ENUMS = {
+    '2': GIANT,
+    '1': ARCHER,
+    '0': KNIGHT
 }
 export const BARRACKS_TYPE_KNIGHT = `${BARRACKS}-${KNIGHT}`
 export const BARRACKS_TYPE_ARCHER = `${BARRACKS}-${ARCHER}`
